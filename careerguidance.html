@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Career Guidance — Explore Careers</title>
+  <meta name="description" content="Simple front-end Career Guidance project with search, filters, and a short interest quiz." />
+  <style>
+    :root{
+      --bg:#0f1724; --card:#0b1220; --muted:#9aa7b2; --accent:#6ee7b7; --glass: rgba(255,255,255,0.03);
+      --glass-2: rgba(255,255,255,0.02); --radius:14px; --maxw:1100px;
+      --glass-border: rgba(255,255,255,0.04);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      color-scheme: dark;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;background:
+      linear-gradient(180deg, #071226 0%, #04101a 100%); color:#e6eef3; -webkit-font-smoothing:antialiased;}
+    .wrap{max-width:var(--maxw);margin:28px auto;padding:20px;}
+    header{display:flex;gap:16px;align-items:center;justify-content:space-between;margin-bottom:22px}
+    .logo{display:flex;gap:12px;align-items:center}
+    .logo .mark{width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#064e3b,#0891b2);
+      display:grid;place-items:center;font-weight:700;color:white;font-size:20px;box-shadow:0 6px 18px rgba(0,0,0,0.4)}
+    h1{font-size:20px;margin:0}
+    p.lead{margin:2px 0 0;color:var(--muted);font-size:13px}
+
+    /* Controls */
+    .controls{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+    input[type="search"], select{background:var(--glass);border:1px solid var(--glass-border);color:inherit;
+      padding:10px 12px;border-radius:10px;outline:none;width:260px}
+    .btn{background:linear-gradient(90deg,var(--accent),#34d399);border:none;padding:10px 14px;border-radius:10px;
+      color:#042022;font-weight:600;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,0.35)}
+    .secondary{background:transparent;border:1px solid var(--glass-border);color:var(--muted);padding:10px 12px;border-radius:10px}
+
+    main{display:grid;grid-template-columns: 1fr 360px;gap:20px}
+    @media (max-width:980px){main{grid-template-columns:1fr} .right-col{order:2}}
+    /* Cards area */
+    .cards{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+    @media (max-width:720px){.cards{grid-template-columns:1fr}}
+    .card{background:linear-gradient(180deg,var(--card),#06121a);padding:14px;border-radius:12px;border:1px solid var(--glass-border);
+      display:flex;gap:12px;align-items:flex-start}
+    .card .icon{width:64px;height:64px;border-radius:10px;background:var(--glass-2);display:grid;place-items:center;font-weight:700;font-size:18px}
+    .card h3{margin:0;font-size:16px}
+    .card p{margin:6px 0 0;color:var(--muted);font-size:13px}
+    .card .meta{margin-top:8px;font-size:12px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap}
+    .card .fav{margin-left:auto;align-self:center;background:transparent;border:0;color:var(--muted);cursor:pointer;font-size:18px}
+    .tags{display:flex;gap:8px;flex-wrap:wrap}
+    .tag{font-size:12px;padding:6px 8px;border-radius:999px;border:1px solid var(--glass-border);color:var(--muted);background:transparent}
+
+    /* Right column (quiz + favorites) */
+    .panel{background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent);border:1px solid var(--glass-border);padding:14px;border-radius:12px}
+    .panel h4{margin:0 0 8px;font-size:15px}
+    .radio-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .radio-grid label{display:flex;align-items:center;gap:10px;padding:8px;border-radius:10px;border:1px dashed var(--glass-border);cursor:pointer}
+    input[type="radio"]{accent-color:var(--accent)}
+    .quiz-result{margin-top:12px;padding:10px;border-radius:10px;background:var(--glass);color:var(--muted);font-size:13px}
+
+    /* small utilities */
+    .muted{color:var(--muted);font-size:13px}
+    .flex{display:flex;gap:8px;align-items:center}
+    footer{margin-top:20px;color:var(--muted);font-size:13px;text-align:center}
+
+    /* subtle hover */
+    .card:hover{transform:translateY(-6px);transition:transform .18s}
+    @media (prefers-reduced-motion:reduce){.card{transition:none}}
+  </style>
+</head>
+<body>
+  <div class="wrap" role="main">
+    <header>
+      <div class="logo" aria-label="Career Guidance">
+        <div class="mark" aria-hidden="true">CG</div>
+        <div>
+          <h1>Career Guidance</h1>
+          <p class="lead">Explore careers, take a quick interest quiz, and save favorites.</p>
+        </div>
+      </div>
+
+      <div class="controls" aria-hidden="false">
+        <input id="search" type="search" placeholder="Search careers (e.g. Data Scientist)" aria-label="Search careers">
+        <select id="categoryFilter" aria-label="Filter by category">
+          <option value="">All categories</option>
+        </select>
+        <button id="clearFilters" class="secondary">Clear</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="left-col" aria-labelledby="browse-heading">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <h2 id="browse-heading" style="margin:0;font-size:16px">Browse Careers</h2>
+          <div class="muted" id="countInfo">0 careers</div>
+        </div>
+
+        <div id="cards" class="cards" aria-live="polite">
+          <!-- Career cards injected here -->
+        </div>
+
+        <footer>
+          <small>Built as a front-end demo. Use the quiz on the right to get quick suggestions.</small>
+        </footer>
+      </section>
+
+      <aside class="right-col">
+        <div class="panel" aria-labelledby="quiz-heading">
+          <h4 id="quiz-heading">Quick Interest Quiz</h4>
+          <p class="muted" style="margin:6px 0 12px;font-size:13px">Choose the statement that fits you best in each row.</p>
+
+          <form id="quiz" onsubmit="return false" aria-describedby="quiz-desc">
+            <div style="margin-bottom:10px">
+              <div class="muted">1) I enjoy working with:</div>
+              <div class="radio-grid" style="margin-top:8px">
+                <label><input type="radio" name="q1" value="tech">Technology & coding</label>
+                <label><input type="radio" name="q1" value="creative">Design & creativity</label>
+                <label><input type="radio" name="q1" value="people">People & communication</label>
+                <label><input type="radio" name="q1" value="data">Data & analysis</label>
+              </div>
+            </div>
+
+            <div style="margin-bottom:10px">
+              <div class="muted">2) I prefer:</div>
+              <div class="radio-grid" style="margin-top:8px">
+                <label><input type="radio" name="q2" value="hands">Hands-on building</label>
+                <label><input type="radio" name="q2" value="writing">Writing & storytelling</label>
+                <label><input type="radio" name="q2" value="strategy">Strategy & planning</label>
+                <label><input type="radio" name="q2" value="research">Research & experiments</label>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:8px;align-items:center">
+              <button id="suggestBtn" class="btn">Suggest careers</button>
+              <button id="resetQuiz" class="secondary">Reset</button>
+            </div>
+
+            <div id="quizResult" class="quiz-result" hidden aria-live="polite"></div>
+          </form>
+        </div>
+
+        <div class="panel" style="margin-top:14px" aria-labelledby="favorites-heading">
+          <h4 id="favorites-heading">Favorites</h4>
+          <p class="muted" style="margin-bottom:8px">Saved careers you liked</p>
+          <ul id="favoritesList" style="padding-left:16px;margin:0;color:var(--muted)"></ul>
+          <div style="margin-top:8px" class="flex">
+            <button id="clearFavs" class="secondary">Clear favorites</button>
+            <div style="margin-left:auto" class="muted" id="favCount">0</div>
+          </div>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <script>
+    /* ===== Data (sample careers) =====
+       In a real project these would come from an API.
+    */
+    const CAREERS = [
+      {
+        id: 'ds',
+        title: 'Data Scientist',
+        category: 'Data & Analytics',
+        desc: 'Analyze data to help organisations make decisions. Requires statistics, SQL, Python/R.',
+        tags: ['Data', 'Python', 'Statistics'],
+        scoreTags: ['data','research','tech']
+      },
+      {
+        id: 'fe',
+        title: 'Front-end Developer',
+        category: 'Software Engineering',
+        desc: 'Build user interfaces and web experiences using HTML/CSS/JS and frameworks like React.',
+        tags: ['HTML','CSS','JavaScript'],
+        scoreTags: ['tech','hands']
+      },
+      {
+        id: 'ux',
+        title: 'UX/UI Designer',
+        category: 'Design',
+        desc: 'Design product experiences, wireframes, and prototypes with a focus on usability.',
+        tags: ['Design','Figma','User Research'],
+        scoreTags: ['creative','writing']
+      },
+      {
+        id: 'pm',
+        title: 'Product Manager',
+        category: 'Product & Strategy',
+        desc: 'Lead product development, coordinate teams, and set product strategy and roadmap.',
+        tags: ['Strategy','Roadmap','Communication'],
+        scoreTags: ['strategy','people']
+      },
+      {
+        id: 'me',
+        title: 'Mechanical Engineer',
+        category: 'Engineering',
+        desc: 'Design and build mechanical systems. Work ranges from CAD design to prototyping.',
+        tags: ['CAD','Prototyping','Mechanics'],
+        scoreTags: ['hands','research']
+      },
+      {
+        id: 'dsci',
+        title: 'Data Engineer',
+        category: 'Data & Analytics',
+        desc: 'Build pipelines and infrastructure to store and serve data reliably at scale.',
+        tags: ['ETL','SQL','Cloud'],
+        scoreTags: ['tech','data']
+      },
+      {
+        id: 'seo',
+        title: 'Content / SEO Specialist',
+        category: 'Marketing',
+        desc: 'Create content and optimize it to rank in search engines and reach target audiences.',
+        tags: ['Writing','SEO','Analytics'],
+        scoreTags: ['writing','strategy']
+      },
+      {
+        id: 'hr',
+        title: 'HR / People Operations',
+        category: 'People & Ops',
+        desc: 'Work with hiring, performance, and employee experience across the company.',
+        tags: ['Recruiting','Employee Engagement'],
+        scoreTags: ['people','strategy']
+      },
+      // add more entries as needed...
+    ];
+
+    // UI refs
+    const cardsEl = document.getElementById('cards');
+    const searchEl = document.getElementById('search');
+    const catEl = document.getElementById('categoryFilter');
+    const countInfo = document.getElementById('countInfo');
+    const suggestBtn = document.getElementById('suggestBtn');
+    const quizResult = document.getElementById('quizResult');
+    const favoritesList = document.getElementById('favoritesList');
+    const favCount = document.getElementById('favCount');
+    const clearFavs = document.getElementById('clearFavs');
+    const clearFilters = document.getElementById('clearFilters');
+    const resetQuiz = document.getElementById('resetQuiz');
+
+    // state
+    let favorites = new Set(JSON.parse(localStorage.getItem('cg_favs') || '[]'));
+    let careers = CAREERS.slice();
+
+    // populate category filter
+    const categories = Array.from(new Set(careers.map(c => c.category))).sort();
+    categories.forEach(cat => {
+      const opt = document.createElement('option');
+      opt.value = cat;
+      opt.textContent = cat;
+      catEl.appendChild(opt);
+    });
+
+    // render careers
+    function renderCards(list){
+      cardsEl.innerHTML = '';
+      if(!list.length){
+        cardsEl.innerHTML = `<div class="muted" style="padding:20px">No careers found. Try clearing filters or searching different keywords.</div>`;
+      }
+      list.forEach(c => {
+        const card = document.createElement('article');
+        card.className = 'card';
+        card.setAttribute('tabindex','0');
+
+        const icon = document.createElement('div');
+        icon.className = 'icon';
+        icon.innerHTML = c.title.split(' ').map(s=>s[0]).slice(0,2).join('');
+        icon.setAttribute('aria-hidden','true');
+
+        const body = document.createElement('div');
+        body.style.flex='1';
+
+        const h = document.createElement('h3'); h.textContent = c.title;
+        const p = document.createElement('p'); p.textContent = c.desc;
+        const meta = document.createElement('div'); meta.className='meta';
+        const cat = document.createElement('span'); cat.className='tag'; cat.textContent = c.category;
+        const tagsWrap = document.createElement('div'); tagsWrap.className='tags';
+        c.tags.forEach(t => {
+          const tEl = document.createElement('span'); tEl.className='tag'; tEl.textContent = t;
+          tagsWrap.appendChild(tEl);
+        });
+
+        meta.appendChild(cat);
+        meta.appendChild(tagsWrap);
+
+        body.appendChild(h); body.appendChild(p); body.appendChild(meta);
+
+        const favBtn = document.createElement('button');
+        favBtn.className = 'fav';
+        favBtn.setAttribute('aria-label', favorites.has(c.id) ? 'Remove from favorites' : 'Add to favorites');
+        favBtn.innerHTML = favorites.has(c.id) ? '★' : '☆';
+        favBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          toggleFav(c.id);
+          renderCards(filteredList()); // refresh icons
+        });
+
+        card.appendChild(icon);
+        card.appendChild(body);
+        card.appendChild(favBtn);
+
+        // click to view more (simple modal replacement: alert)
+        card.addEventListener('click', () => {
+          showCareerDetails(c);
+        });
+
+        cardsEl.appendChild(card);
+      });
+
+      countInfo.textContent = `${list.length} career${list.length !== 1 ? 's' : ''}`;
+    }
+
+    function showCareerDetails(c){
+      const lines = [
+        c.title,
+        '',
+        `Category: ${c.category}`,
+        '',
+        c.desc,
+        '',
+        `Skills: ${c.tags.join(', ')}`
+      ];
+      alert(lines.join('\\n'));
+    }
+
+    // search & filter
+    function filteredList(){
+      const q = searchEl.value.trim().toLowerCase();
+      const cat = catEl.value;
+      return careers.filter(c => {
+        const matchesQ = !q || (c.title + ' ' + c.desc + ' ' + c.tags.join(' ')).toLowerCase().includes(q);
+        const matchesCat = !cat || c.category === cat;
+        return matchesQ && matchesCat;
+      });
+    }
+
+    searchEl.addEventListener('input', () => renderCards(filteredList()));
+    catEl.addEventListener('change', () => renderCards(filteredList()));
+    clearFilters.addEventListener('click', () => {
+      searchEl.value=''; catEl.value=''; renderCards(careers);
+    });
+
+    // favorites logic
+    function toggleFav(id){
+      if(favorites.has(id)) favorites.delete(id); else favorites.add(id);
+      persistFavs();
+      renderFavs();
+    }
+    function persistFavs(){
+      localStorage.setItem('cg_favs', JSON.stringify(Array.from(favorites)));
+    }
+    function renderFavs(){
+      favoritesList.innerHTML = '';
+      const favArr = Array.from(favorites);
+      if(!favArr.length){
+        favoritesList.innerHTML = '<li class="muted">No favorites yet. Click the star on a career to save it.</li>';
+      } else {
+        favArr.forEach(id => {
+          const c = careers.find(x=>x.id===id);
+          if(!c) return;
+          const li = document.createElement('li');
+          li.style.marginBottom='8px';
+          li.innerHTML = `<strong>${c.title}</strong><div class="muted" style="font-size:12px">${c.category}</div>`;
+          favoritesList.appendChild(li);
+        });
+      }
+      favCount.textContent = `${favArr.length}`;
+    }
+    clearFavs.addEventListener('click', () => {
+      if(confirm('Clear all favorites?')){ favorites.clear(); persistFavs(); renderFavs(); renderCards(filteredList()); }
+    });
+
+    // Quiz suggestion logic (super simple mapping)
+    suggestBtn.addEventListener('click', () => {
+      const form = document.getElementById('quiz');
+      const f = new FormData(form);
+      const q1 = f.get('q1'); const q2 = f.get('q2');
+      if(!q1 || !q2){
+        quizResult.hidden = false;
+        quizResult.textContent = 'Please answer both questions to get a suggestion.';
+        return;
+      }
+
+      // scoring: pick careers that match most scoreTags
+      const pickedTags = [q1, q2]; // q values aligned with career scoreTags keys
+      const scored = careers.map(c => {
+        let score = 0;
+        pickedTags.forEach(t => { if(c.scoreTags.includes(t)) score += 1; });
+        return {c,score};
+      }).filter(x=>x.score>0).sort((a,b)=>b.score-a.score);
+
+      if(!scored.length){
+        quizResult.hidden=false;
+        quizResult.textContent = 'No clear matches found — try different answers or browse manually.';
+        return;
+      }
+
+      // Show top 3 suggestions
+      const top = scored.slice(0,3).map(x => x.c.title + ' — ' + x.c.category);
+      quizResult.hidden = false;
+      quizResult.innerHTML = `<strong>Suggested careers:</strong><br>${top.join('<br>')}`;
+      // also highlight them in the list
+      const topIds = new Set(scored.slice(0,3).map(x=>x.c.id));
+      renderCards(filteredList().map(c => { // ensure top ones stay first
+        if(topIds.has(c.id)) return c;
+        return c;
+      }).sort((a,b)=> (topIds.has(b.id)?1:0) - (topIds.has(a.id)?1:0)));
+    });
+
+    resetQuiz.addEventListener('click', () => {
+      document.getElementById('quiz').reset();
+      quizResult.hidden=true;
+      renderCards(filteredList());
+    });
+
+    // small accessibility: enter in search focuses results
+    searchEl.addEventListener('keydown',(e)=>{ if(e.key==='Enter'){ const first = cardsEl.querySelector('.card'); if(first) first.focus(); } });
+
+    // initial render
+    renderCards(careers);
+    renderFavs();
+
+    // expose for debugging (optional)
+    window.__CG = {careers, renderCards, filteredList};
+
+  </script>
+</body>
+</html>
